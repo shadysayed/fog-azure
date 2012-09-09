@@ -5,15 +5,17 @@ module Fog
         require 'fog/azure/parsers/storage/list_containers'
         
         def list_containers(options = {})
-          # establish_connection do
-          #   WAZ::Blobs::Container.list.map{ |container| { name: container.name }  }       
-          # end
+          # This operation will only nead to change the query string
+          # So the options hash is passed to the query and not headers
           request(
           expects: 200,
-          headers: options,
+          headers: {},
           method: :get,
           parser: Fog::Parsers::Storage::Azure::ListContainers.new,
-          query: {'comp' => 'list'}
+          query: {
+            'comp' => 'list',
+            'include' => 'metadata'
+            }.merge!(options || {})
           )
         end
       end
