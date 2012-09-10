@@ -22,18 +22,18 @@ module Fog
       request :list_containers
       # request :set_blob_service_properties
       # request :get_blob_service_properties
-      # request :create_container
-      # request :get_container_properties
+      request :create_container
+      request :get_container_properties
       # request :get_container_metadata
       # request :set_container_metadata
-      # request :get_container_acl
-      # request :set_container_acl
+      request :get_container_acl
+      request :set_container_acl
       # request :lease_container
-      # request :delete_container
+      request :delete_container
       request :list_blobs
       # request :put_blob
-      # request :get_blob
-      # request :get_blob_properties
+      request :get_blob
+      request :get_blob_properties
       # request :set_blob_properties
       # request :get_blob_metadata
       # request :set_blob_metadata
@@ -84,6 +84,10 @@ module Fog
       
       class Real
         include Utils
+        
+        attr_reader :host
+        attr_reader :scheme
+        attr_reader :path
         
         # Initialize connection to azure blob store
         #
@@ -145,9 +149,17 @@ module Fog
           params[:path] ||= '/'
           headers = params[:headers]
           
+          if params[:method] && ![:get, 'GET'].include?(params[:method])
+            content_length = 0
+            if params[:body]
+              content_length = params[:body].size
+            end
+            headers["Content-Length"] = content_length
+          end
           headers["x-ms-Date"] = Time.new.httpdate
           headers["x-ms-version"] = "2009-09-19"
           headers["Authorization"] = "SharedKey #{@azure_storage_account_name}:#{get_signature(params)}"
+          # raise headers.inspect
           begin
             response = @connection.request(params, &block)
           # rescue Excon::Errors::SocketError => e

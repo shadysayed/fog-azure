@@ -42,8 +42,24 @@ module Fog
           end
         end
         
-        def get(key, options = {}, &block)
-          
+        def get(key, options = {})
+          requires :directory
+          response = connection.get_blob(directory.key, key, options)
+          file_attributes = response.headers.merge({
+            body: data.body,
+            key: key
+          })
+          normalise_headers(file_attributes)
+          new(file_attributes)
+        rescue Excon::Errors::NotFound => error
+        end
+        
+        def get_url(key)
+          requires :directory
+        end
+        
+        def head(key, options = {})
+          requires :directory
         end
         
         alias :each_file_this_page :each
@@ -59,6 +75,16 @@ module Fog
           self
         end
         
+        def new(attributes = {})
+          requires :directory
+          super({ :directory => directory }.merge!(attributes))
+        end
+        
+        # Borrowed from fog
+        def normalise_headers(headers)
+          headers['Last-Modified'] = Time.parse(headers['Last-Modified'])
+          headers['ETag'].gsub!('"','')
+        end
       end
     end
   end
