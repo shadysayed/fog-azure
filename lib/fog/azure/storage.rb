@@ -30,7 +30,7 @@ module Fog
       # request :set_container_acl
       # request :lease_container
       # request :delete_container
-      # request :list_blobs
+      request :list_blobs
       # request :put_blob
       # request :get_blob
       # request :get_blob_properties
@@ -51,6 +51,35 @@ module Fog
       
       module Utils
         # put common functions between real and mock here
+        
+        
+        def extract_sub_dictionary(dict, *keys)
+          result = {}
+          for k, v in dict
+            if keys.include? k
+              result[k] = v
+            end
+          end
+          result
+        end
+        
+        def stringify_keys(dict)
+          dict.inject({}) do |result, (key, value)|
+            result[key.to_s] = value
+            result
+          end
+        end
+        
+        def extract_ms_metadata(dict)
+          result = {}
+          r = /^x-ms-meta-(?<name>.+)/
+          dict.keys.each do |key|
+            if key && (match = r.match(key))
+              result[match[:name]] = dict[key]
+            end
+          end
+          result
+        end
       end
       
       class Real
@@ -106,6 +135,7 @@ module Fog
         end
         
         def request(params, &block)
+          # TODO: Add retry logic.
           #Setup headers
           # params[:method] :get, :post, ...etc
           # params[:query] = {:foo => 'bar'}
@@ -120,6 +150,8 @@ module Fog
           headers["Authorization"] = "SharedKey #{@azure_storage_account_name}:#{get_signature(params)}"
           begin
             response = @connection.request(params, &block)
+          # rescue Excon::Errors::SocketError => e
+          #   raise e.backtrace.inspect
           rescue Excon::Errors::TemporaryRedirect => e
             
           end
@@ -153,8 +185,8 @@ module Fog
         end
         def canonicalize_resource(params)
           result = ["/#{@azure_storage_account_name}/#{params[:path].sub('/', '')}",
-            params[:query].keys.map {|k| "#{k.to_s.downcase.strip}:#{canonicalize_query_value(params[:query][k])}"}.join("\n")
-            ].join("\n")
+            params[:query].keys.sort{ |a, b| a <=> b }.map {|k| "#{k.to_s.downcase.strip}:#{canonicalize_query_value(params[:query][k])}"}.join("\n")
+            ].join("\n").chomp
           result
         end
         def canonicalize_query_value(value)

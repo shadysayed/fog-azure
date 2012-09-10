@@ -5,6 +5,7 @@ module Fog
   module Storage
     class Azure
       class Directories < Fog::Collection
+        include Fog::Storage::Azure::Utils
         model Fog::Storage::Azure::Directory
         attribute :next_marker, :aliases => ['NextMarker']
         attribute :marker, :aliases => ["Marker"]
@@ -18,6 +19,27 @@ module Fog
         end
         
         def get(key, options = {})
+          remap_attributes(options,{
+            delimiter: 'delimiter',
+            marker: 'marker',
+            prefix: 'prefix'
+          })
+          response = connection.list_blobs(key, options)
+          data = response.body
+          directory = new(key: key)
+          # copy what we know about into the files collection
+          options = extract_sub_dictionary(data,
+            'BlobPrefixes',
+            'Marker',
+            'Delimiter',
+            'NextMarker',
+            'Prefix'
+          )
+          directory.files.merge_attributes(options)
+          directory.files.load(data['Content'])
+          directory
+        rescue Excon::Errors::NotFound
+          nil
         end
         
         alias :each_dir_this_page :each

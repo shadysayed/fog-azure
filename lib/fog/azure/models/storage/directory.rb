@@ -9,6 +9,10 @@ module Fog
         attribute :url, :aliases => ['Url']
         attribute :etag, :aliases => ['Etag']
         attribute :metadata, :aliases => ['Metadata']
+        
+        def files
+          @files ||= Fog::Storage::Azure::Files.new(directory: self, connection: connection)
+        end
       end
     end
   end
