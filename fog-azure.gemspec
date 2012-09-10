@@ -16,6 +16,5 @@ Gem::Specification.new do |gem|
   gem.version       = Fog::Azure::VERSION
   
   gem.add_dependency "fog", "~> 1.5.0"
-  gem.add_dependency "waz-storage", "~> 1.1.4"
   gem.add_development_dependency "rspec"
 end
