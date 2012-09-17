@@ -80,6 +80,40 @@ module Fog
           end
           result
         end
+        
+        def http_url(params, expires)
+          scheme_host_path_query(params.merge(:scheme => 'http', :port => 80), expires)
+        end
+
+        def https_url(params, expires)
+          scheme_host_path_query(params.merge(:scheme => 'https', :port => 443), expires)
+        end
+
+        
+        private
+        def scheme_host_path_query(params, expires)
+          params[:scheme] ||= @scheme
+          if params[:port] == 80 && params[:scheme] == 'http'
+            params.delete(:port)
+          end
+          if params[:port] == 443 && params[:scheme] == 'https'
+            params.delete(:port)
+          end
+          params[:headers] ||= {}
+          #TODO: add signing for shared access signatures
+          #call AWS escape, don't reinvent the wheel
+          params[:path] = Fog::AWS.escape(params[:path]).gsub('%2F', '/')
+          query = []
+          if params[:query]
+            for key, value in params[:query]
+              #call the AWS escape, there is no need to reimplement
+              query << "#{key}=#{Fog::AWS.escape(value)}"
+            end
+          end
+          port_part = params[:port] && ":#{params[:port]}"
+          "#{params[:scheme]}://#{params[:host]}#{port_part}/#{params[:path]}?#{query.join('&')}"
+        end
+        
       end
       
       class Real

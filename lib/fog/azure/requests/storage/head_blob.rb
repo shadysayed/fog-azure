@@ -2,7 +2,7 @@ module Fog
   module Storage
     class Azure
       class Real
-        def get_blob(container, path, options = {}, &block)
+        def head_blob(container, path, options = {}, &block)
           unless container
             raise ArgumentError.new("container is required")
           end
@@ -20,14 +20,14 @@ module Fog
           
           request(params.merge!({
             expects: [200],
-            method: :get,
+            method: 'HEAD',
             idempotent: true,
             path: File.join(container, path) # Fog::Rackspace.escape(path, '/'))
           }))
         end
       end
       class Mock
-        def get_blob(container, path, options = {}, &block)
+        def head_blob(container, path, options = {}, &block)
         end
       end
     end

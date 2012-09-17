@@ -54,12 +54,24 @@ module Fog
         rescue Excon::Errors::NotFound => error
         end
         
-        def get_url(key)
+        def get_url(key, expires = nil, options={})
           requires :directory
+          # if self.directory.public_url
+          #   ::File.join(self.directory.public_url, key)
+          # end
+          connection.get_blob_http_url(directory.key, key, expires, options)
         end
         
         def head(key, options = {})
           requires :directory
+          data = connection.head_blob(directory.key, key)
+          file_data = data.headers.merge({
+            :key => key
+          })
+          normalize_headers(file_attributes)
+          new(file_data)
+        rescue Excon::Errors::NotFound => error
+          nil
         end
         
         alias :each_file_this_page :each
